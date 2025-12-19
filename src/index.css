@@ -66,3 +66,18 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* PCで見やすくするための中央寄せ設定 */
+body {
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f0fdf4; /* 背景を薄い緑に（お好みで！） */
+}
+
+#root {
+  width: 100%;
+  max-width: 600px; /* スマホ幅くらいに制限 */
+  margin: 0 auto;
+  padding: 20px;
+}
