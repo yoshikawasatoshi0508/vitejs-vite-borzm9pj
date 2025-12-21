@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// ⬇️ 必要なパーツを追加でインポートします
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import "./App.css";
 
-// 🔹 科目リスト（ここに追加しました！）
 const CATEGORIES = [
   "人間の尊厳と自立",
   "人間関係とコミュニケーション",
@@ -26,14 +26,11 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // 🔹 画面の状態管理（'home' | 'categories' | 'quiz'）
   const [screen, setScreen] = useState("home");
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  // APIキーの読み込み
   const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-  // 問題を生成する関数
   const generateQuestion = async (category = null) => {
     if (!API_KEY) {
       setError("APIキーが設定されていません。");
@@ -46,7 +43,6 @@ function App() {
     setSelectedOption(null);
     setResult(null);
 
-    // 🔹 プロンプト（命令文）の作成
     let promptText = "介護福祉士国家試験の模擬問題（4択）を1問作成してください。";
     
     if (category) {
@@ -59,7 +55,7 @@ function App() {
     }
 
     promptText += `
-    出力は以下のJSON形式のみで、余計な文字を含めないでください:
+    出力は以下のJSON形式のみで、余計な文字（markdownの記号など）を含めないでください:
     {
       "category": "分野名",
       "text": "問題文",
@@ -71,29 +67,57 @@ function App() {
 
     try {
       const genAI = new GoogleGenerativeAI(API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      
+      // ⬇️ モデルを最新の「gemini-1.5-flash」に変更し、安全設定を追加
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        safetySettings: [
+          {
+            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+        ],
+      });
+
       const result = await model.generateContent(promptText);
       const response = await result.response;
       const text = response.text();
 
-      // JSONを抽出・解析
+      // JSONの抽出（AIが ```json ... ``` と返してきても対応できるように）
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const json = JSON.parse(jsonMatch[0]);
         setQuestion(json);
-        setScreen("quiz"); // クイズ画面へ移動
+        setScreen("quiz");
       } else {
+        console.error("AIからの応答が不正です:", text);
         throw new Error("JSON形式での取得に失敗しました");
       }
     } catch (err) {
       console.error(err);
-      setError("問題の生成に失敗しました。もう一度試してください。");
+      // エラーの内容によってメッセージを変える
+      if (err.message.includes("SAFETY")) {
+         setError("AIの安全フィルターに引っかかりました。もう一度試してみてください。");
+      } else {
+         setError("問題の生成に失敗しました。もう一度ボタンを押してみてください。");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // 答え合わせ
   const checkAnswer = (option) => {
     setSelectedOption(option);
     if (option === question.correctAnswer) {
@@ -103,18 +127,14 @@ function App() {
     }
   };
 
-  // ホームに戻る
   const goHome = () => {
     setScreen("home");
     setQuestion(null);
     setResult(null);
   };
 
-  // ---------------------------------------------
-  // 🖥️ 画面表示（レンダリング）
-  // ---------------------------------------------
+  // --- 画面表示 ---
 
-  // ① 🏠 ホーム画面
   if (screen === "home") {
     return (
       <div className="container home-screen">
@@ -143,7 +163,6 @@ function App() {
     );
   }
 
-  // ② 📚 科目選択画面
   if (screen === "categories") {
     return (
       <div className="container category-screen">
@@ -167,11 +186,11 @@ function App() {
           ↩ ホームに戻る
         </button>
         {loading && <div className="loading-overlay">問題を作成中...</div>}
+        {error && <div className="error-overlay" onClick={() => setError(null)}>{error}<br/><small>(タップして閉じる)</small></div>}
       </div>
     );
   }
 
-  // ③ 📝 クイズ画面（今までの画面）
   return (
     <div className="container quiz-screen">
       <div className="header">
