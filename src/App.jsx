@@ -67,10 +67,9 @@ function App() {
     try {
       const genAI = new GoogleGenerativeAI(API_KEY);
       
-      // ⬇️ モデルを最新の「gemini-1.5-flash」に変更
-      // ※これで404エラー（モデルが見つからない）は消えるはずです
+      // ⬇️ ここをユーザー様の発見通り「gemini-2.5-flash」に修正しました！
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -106,7 +105,6 @@ function App() {
       }
     } catch (err) {
       console.error(err);
-      // エラー詳細を表示
       let msg = "エラーが発生しました。もう一度お試しください。";
       if (err.message) msg += `\n(詳細: ${err.message})`;
       setError(msg);
