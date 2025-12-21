@@ -67,9 +67,10 @@ function App() {
     try {
       const genAI = new GoogleGenerativeAI(API_KEY);
       
-      // ⬇️ ここを修正！「gemini-pro」に戻して、安全設定はキープします
+      // ⬇️ モデルを最新の「gemini-1.5-flash」に変更
+      // ※これで404エラー（モデルが見つからない）は消えるはずです
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-pro", // 安定版に変更
+        model: "gemini-1.5-flash",
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -105,7 +106,7 @@ function App() {
       }
     } catch (err) {
       console.error(err);
-      // ⬇️ エラーの正体を画面に表示するように変更しました
+      // エラー詳細を表示
       let msg = "エラーが発生しました。もう一度お試しください。";
       if (err.message) msg += `\n(詳細: ${err.message})`;
       setError(msg);
