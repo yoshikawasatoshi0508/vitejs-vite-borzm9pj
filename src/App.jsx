@@ -1,195 +1,226 @@
-import React, { useState } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import {
-  BookOpen,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
+import { useState } from "react";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import "./App.css";
 
-// 環境変数からAPIキーを取得
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+// 🔹 科目リスト（ここに追加しました！）
+const CATEGORIES = [
+  "人間の尊厳と自立",
+  "人間関係とコミュニケーション",
+  "社会の理解",
+  "介護の基本",
+  "コミュニケーション技術",
+  "生活支援技術",
+  "介護過程",
+  "発達と老化の理解",
+  "認知症の理解",
+  "障害の理解",
+  "こころとからだのしくみ",
+  "医療的ケア",
+  "総合問題",
+];
 
-const App = () => {
-  const [loading, setLoading] = useState(false);
-  const [quiz, setQuiz] = useState(null);
+function App() {
+  const [question, setQuestion] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [showResult, setShowResult] = useState(false);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [keyInput, setKeyInput] = useState(apiKey);
-  const [useManualKey, setUseManualKey] = useState(!apiKey);
 
-  const generateProblem = async () => {
+  // 🔹 画面の状態管理（'home' | 'categories' | 'quiz'）
+  const [screen, setScreen] = useState("home");
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
+  // APIキーの読み込み
+  const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+  // 問題を生成する関数
+  const generateQuestion = async (category = null) => {
+    if (!API_KEY) {
+      setError("APIキーが設定されていません。");
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    setQuiz(null);
+    setQuestion(null);
     setSelectedOption(null);
-    setShowResult(false);
+    setResult(null);
+
+    // 🔹 プロンプト（命令文）の作成
+    let promptText = "介護福祉士国家試験の模擬問題（4択）を1問作成してください。";
+    
+    if (category) {
+      promptText += `\n出題分野は「${category}」に限定してください。`;
+      if (category === "総合問題") {
+        promptText += "（事例問題や、科目を横断するような応用問題にしてください）";
+      }
+    } else {
+      promptText += "\n分野はランダムで、本番形式に近い問題にしてください。";
+    }
+
+    promptText += `
+    出力は以下のJSON形式のみで、余計な文字を含めないでください:
+    {
+      "category": "分野名",
+      "text": "問題文",
+      "options": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
+      "correctAnswer": "正解の選択肢（文字列そのもの）",
+      "explanation": "解説"
+    }
+    `;
 
     try {
-      // APIキーの確認
-      const effectiveKey = useManualKey ? keyInput : apiKey;
-      if (!effectiveKey) throw new Error('APIキーが設定されていません');
-
-      const genAI = new GoogleGenerativeAI(effectiveKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
-      const prompt = `
-        介護福祉士国家試験レベルの4択問題を作成してください。
-        以下のJSON形式のみを出力してください。余計なマークダウン( \`\`\`json など)は不要です。
-        
-        {
-          "question": "問題文",
-          "options": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
-          "answerIndex": 0,
-          "explanation": "解説文"
-        }
-      `;
-
-      const result = await model.generateContent(prompt);
+      const genAI = new GoogleGenerativeAI(API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const result = await model.generateContent(promptText);
       const response = await result.response;
-      let text = response.text();
+      const text = response.text();
 
-      console.log('AIからの生データ:', text); // デバッグ用
-
-      // よくあるエラー：Markdown記号を取り除く処理
-      text = text
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
-
-      const json = JSON.parse(text);
-      setQuiz(json);
+      // JSONを抽出・解析
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const json = JSON.parse(jsonMatch[0]);
+        setQuestion(json);
+        setScreen("quiz"); // クイズ画面へ移動
+      } else {
+        throw new Error("JSON形式での取得に失敗しました");
+      }
     } catch (err) {
-      console.error('詳細なエラー:', err);
-      // エラーの中身を画面に表示する
-      setError(err.toString());
+      console.error(err);
+      setError("問題の生成に失敗しました。もう一度試してください。");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOptionClick = (index) => {
-    setSelectedOption(index);
-    setShowResult(true);
+  // 答え合わせ
+  const checkAnswer = (option) => {
+    setSelectedOption(option);
+    if (option === question.correctAnswer) {
+      setResult("correct");
+    } else {
+      setResult("incorrect");
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-green-50 flex flex-col items-center justify-center p-4 font-sans text-gray-800">
-      {/* エラー表示エリア（デバッグ用） */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg max-w-md w-full break-words">
-          <div className="flex items-center gap-2 font-bold mb-1">
-            <AlertCircle size={20} /> エラーが発生しました
-          </div>
-          <p className="text-sm font-mono">{error}</p>
-        </div>
-      )}
+  // ホームに戻る
+  const goHome = () => {
+    setScreen("home");
+    setQuestion(null);
+    setResult(null);
+  };
 
-      {!quiz && !loading && (
-        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
-          <div className="flex justify-center mb-4 text-green-500">
-            <BookOpen size={48} />
-          </div>
-          <h1 className="text-2xl font-bold mb-2 text-green-700">
-            介護福祉士 模擬試験
-          </h1>
-          <p className="text-gray-500 mb-6">
-            Gemini APIを利用して無限に問題を生成します
-          </p>
+  // ---------------------------------------------
+  // 🖥️ 画面表示（レンダリング）
+  // ---------------------------------------------
 
-          {useManualKey && (
-            <input
-              type="text"
-              placeholder="APIキーを入力 (AIza...)"
-              value={keyInput}
-              onChange={(e) => setKeyInput(e.target.value)}
-              className="w-full mb-4 p-2 border rounded"
-            />
-          )}
-
-          <button
-            onClick={generateProblem}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full transition duration-300 shadow-md flex items-center justify-center gap-2"
+  // ① 🏠 ホーム画面
+  if (screen === "home") {
+    return (
+      <div className="container home-screen">
+        <h1>介護福祉士<br />国家試験対策</h1>
+        <p>AIがあなたのために無限に問題を作成します</p>
+        
+        <div className="menu-buttons">
+          <button 
+            className="menu-btn primary-btn"
+            onClick={() => generateQuestion(null)}
+            disabled={loading}
           >
-            学習を始める
+            {loading ? "作成中..." : "📝 模擬試験（ランダム出題）"}
+          </button>
+          
+          <button 
+            className="menu-btn secondary-btn"
+            onClick={() => setScreen("categories")}
+            disabled={loading}
+          >
+            📚 科目別練習モード
           </button>
         </div>
-      )}
+        {error && <p className="error">{error}</p>}
+      </div>
+    );
+  }
 
-      {loading && (
-        <div className="text-center">
-          <Loader2
-            className="animate-spin text-green-600 mx-auto mb-2"
-            size={48}
-          />
-          <p className="text-green-700 font-medium">
-            AIが問題を考えています...
-          </p>
+  // ② 📚 科目選択画面
+  if (screen === "categories") {
+    return (
+      <div className="container category-screen">
+        <h2>学習する科目を選んでください</h2>
+        <div className="category-list">
+          {CATEGORIES.map((cat) => (
+            <button 
+              key={cat} 
+              className="category-btn"
+              onClick={() => {
+                setSelectedCategory(cat);
+                generateQuestion(cat);
+              }}
+              disabled={loading}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
-      )}
+        <button className="back-btn" onClick={goHome} disabled={loading}>
+          ↩ ホームに戻る
+        </button>
+        {loading && <div className="loading-overlay">問題を作成中...</div>}
+      </div>
+    );
+  }
 
-      {quiz && (
-        <div className="bg-white p-6 rounded-xl shadow-xl max-w-lg w-full">
-          <div className="mb-4">
-            <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">
-              問題
-            </span>
-          </div>
-          <h2 className="text-xl font-bold mb-6 leading-relaxed">
-            {quiz.question}
-          </h2>
+  // ③ 📝 クイズ画面（今までの画面）
+  return (
+    <div className="container quiz-screen">
+      <div className="header">
+        <span className="badge">{question?.category || (selectedCategory ?? "模擬試験")}</span>
+        <button className="close-btn" onClick={goHome}>終了</button>
+      </div>
 
-          <div className="space-y-3">
-            {quiz.options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => !showResult && handleOptionClick(index)}
-                disabled={showResult}
-                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                  showResult
-                    ? index === quiz.answerIndex
-                      ? 'bg-green-100 border-green-500 text-green-900'
-                      : index === selectedOption
-                      ? 'bg-red-100 border-red-500 text-red-900'
-                      : 'bg-gray-50 border-gray-200'
-                    : 'border-gray-200 hover:border-green-400 hover:bg-green-50'
-                }`}
-              >
-                <div className="flex justify-between items-center">
-                  <span>{option}</span>
-                  {showResult && index === quiz.answerIndex && (
-                    <CheckCircle className="text-green-600" />
-                  )}
-                  {showResult &&
-                    index === selectedOption &&
-                    index !== quiz.answerIndex && (
-                      <XCircle className="text-red-500" />
-                    )}
-                </div>
-              </button>
-            ))}
-          </div>
+      <div className="card">
+        <h2 className="question-text">{question.text}</h2>
 
-          {showResult && (
-            <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200 animate-fade-in">
-              <h3 className="font-bold text-yellow-800 mb-2">解説</h3>
-              <p className="text-gray-700 text-sm leading-relaxed">
-                {quiz.explanation}
-              </p>
-              <button
-                onClick={generateProblem}
-                className="mt-4 w-full bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700"
-              >
-                次の問題へ
-              </button>
-            </div>
-          )}
+        <div className="options">
+          {question.options.map((option, index) => (
+            <button
+              key={index}
+              onClick={() => checkAnswer(option)}
+              disabled={result !== null}
+              className={`option-btn ${
+                result !== null
+                  ? option === question.correctAnswer
+                    ? "correct"
+                    : option === selectedOption
+                    ? "incorrect"
+                    : ""
+                  : ""
+              }`}
+            >
+              {option}
+            </button>
+          ))}
         </div>
-      )}
+
+        {result && (
+          <div className={`result-area ${result}`}>
+            <h3>{result === "correct" ? "🎉 正解！" : "😢 残念..."}</h3>
+            <p className="explanation">
+              <strong>【解説】</strong><br />
+              {question.explanation}
+            </p>
+            <button 
+              className="next-btn" 
+              onClick={() => generateQuestion(selectedCategory)}
+            >
+              次の問題へ
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
-};
+}
 
 export default App;
