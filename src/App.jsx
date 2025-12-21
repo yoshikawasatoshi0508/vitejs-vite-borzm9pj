@@ -1,5 +1,4 @@
 import { useState } from "react";
-// ⬇️ 必要なパーツを追加でインポートします
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import "./App.css";
 
@@ -68,9 +67,9 @@ function App() {
     try {
       const genAI = new GoogleGenerativeAI(API_KEY);
       
-      // ⬇️ モデルを最新の「gemini-1.5-flash」に変更し、安全設定を追加
+      // ⬇️ ここを修正！「gemini-pro」に戻して、安全設定はキープします
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "gemini-pro", // 安定版に変更
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -95,24 +94,21 @@ function App() {
       const response = await result.response;
       const text = response.text();
 
-      // JSONの抽出（AIが ```json ... ``` と返してきても対応できるように）
+      // JSONの抽出
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const json = JSON.parse(jsonMatch[0]);
         setQuestion(json);
         setScreen("quiz");
       } else {
-        console.error("AIからの応答が不正です:", text);
-        throw new Error("JSON形式での取得に失敗しました");
+        throw new Error("AIが正しい形式（JSON）で返答しませんでした:\n" + text.substring(0, 100));
       }
     } catch (err) {
       console.error(err);
-      // エラーの内容によってメッセージを変える
-      if (err.message.includes("SAFETY")) {
-         setError("AIの安全フィルターに引っかかりました。もう一度試してみてください。");
-      } else {
-         setError("問題の生成に失敗しました。もう一度ボタンを押してみてください。");
-      }
+      // ⬇️ エラーの正体を画面に表示するように変更しました
+      let msg = "エラーが発生しました。もう一度お試しください。";
+      if (err.message) msg += `\n(詳細: ${err.message})`;
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -158,7 +154,7 @@ function App() {
             📚 科目別練習モード
           </button>
         </div>
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error" style={{whiteSpace: 'pre-wrap'}}>{error}</p>}
       </div>
     );
   }
