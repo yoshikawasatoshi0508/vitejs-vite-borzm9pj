@@ -36,6 +36,7 @@ function App() {
       return;
     }
 
+    // ⬇️ ここが重要：ローディングを開始したら、先に画面を切り替える準備をする
     setLoading(true);
     setError(null);
     setQuestion(null);
@@ -67,9 +68,8 @@ function App() {
     try {
       const genAI = new GoogleGenerativeAI(API_KEY);
       
-      // ⬇️ ここをユーザー様の発見通り「gemini-2.5-flash」に修正しました！
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash", // ユーザー様の指定通り 2.5 にしています
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -94,14 +94,13 @@ function App() {
       const response = await result.response;
       const text = response.text();
 
-      // JSONの抽出
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const json = JSON.parse(jsonMatch[0]);
         setQuestion(json);
         setScreen("quiz");
       } else {
-        throw new Error("AIが正しい形式（JSON）で返答しませんでした:\n" + text.substring(0, 100));
+        throw new Error("AIが正しい形式（JSON）で返答しませんでした");
       }
     } catch (err) {
       console.error(err);
@@ -128,8 +127,24 @@ function App() {
     setResult(null);
   };
 
-  // --- 画面表示 ---
+  // ---------------------------------------------
+  // 🖥️ 画面表示（レンダリング）
+  // ---------------------------------------------
 
+  // ① 共通のローディング表示（全画面用）
+  // これを追加することで、問題作成中に真っ白になるのを防ぎます
+  if (loading) {
+    return (
+      <div className="container" style={{ textAlign: "center", paddingTop: "50px" }}>
+        <div className="loading-overlay">
+          <p>次の問題を作成中です...🤖</p>
+          <div style={{ marginTop: "20px", fontSize: "2rem" }}>⏳</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ② 🏠 ホーム画面
   if (screen === "home") {
     return (
       <div className="container home-screen">
@@ -140,15 +155,13 @@ function App() {
           <button 
             className="menu-btn primary-btn"
             onClick={() => generateQuestion(null)}
-            disabled={loading}
           >
-            {loading ? "作成中..." : "📝 模擬試験（ランダム出題）"}
+             📝 模擬試験（ランダム出題）
           </button>
           
           <button 
             className="menu-btn secondary-btn"
             onClick={() => setScreen("categories")}
-            disabled={loading}
           >
             📚 科目別練習モード
           </button>
@@ -158,6 +171,7 @@ function App() {
     );
   }
 
+  // ③ 📚 科目選択画面
   if (screen === "categories") {
     return (
       <div className="container category-screen">
@@ -171,19 +185,23 @@ function App() {
                 setSelectedCategory(cat);
                 generateQuestion(cat);
               }}
-              disabled={loading}
             >
               {cat}
             </button>
           ))}
         </div>
-        <button className="back-btn" onClick={goHome} disabled={loading}>
+        <button className="back-btn" onClick={goHome}>
           ↩ ホームに戻る
         </button>
-        {loading && <div className="loading-overlay">問題を作成中...</div>}
         {error && <div className="error-overlay" onClick={() => setError(null)}>{error}<br/><small>(タップして閉じる)</small></div>}
       </div>
     );
+  }
+
+  // ④ 📝 クイズ画面
+  // 安全装置：もしクイズ画面なのに問題データがない場合は、ホームに戻すかエラーを出さないようにする
+  if (!question) {
+     return <div className="container">読み込みエラー。ホームに戻ってください。</div>;
   }
 
   return (
