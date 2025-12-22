@@ -36,7 +36,6 @@ function App() {
       return;
     }
 
-    // ⬇️ ここが重要：ローディングを開始したら、先に画面を切り替える準備をする
     setLoading(true);
     setError(null);
     setQuestion(null);
@@ -68,8 +67,9 @@ function App() {
     try {
       const genAI = new GoogleGenerativeAI(API_KEY);
       
+      // ユーザー様の実績に合わせて gemini-2.5-flash を指定
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash", // ユーザー様の指定通り 2.5 にしています
+        model: "gemini-2.5-flash",
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -127,43 +127,51 @@ function App() {
     setResult(null);
   };
 
-  // ---------------------------------------------
-  // 🖥️ 画面表示（レンダリング）
-  // ---------------------------------------------
-
-  // ① 共通のローディング表示（全画面用）
-  // これを追加することで、問題作成中に真っ白になるのを防ぎます
+  // --- 共通ローディング ---
   if (loading) {
     return (
-      <div className="container" style={{ textAlign: "center", paddingTop: "50px" }}>
+      <div className="container" style={{ textAlign: "center", paddingTop: "100px" }}>
         <div className="loading-overlay">
-          <p>次の問題を作成中です...🤖</p>
-          <div style={{ marginTop: "20px", fontSize: "2rem" }}>⏳</div>
+          <p style={{fontSize: "1.2rem", fontWeight: "bold", color: "#555"}}>問題を生成中...🤖</p>
+          <div style={{ marginTop: "20px", fontSize: "3rem" }}>⏳</div>
         </div>
       </div>
     );
   }
 
-  // ② 🏠 ホーム画面
+  // --- 🏠 ホーム画面 (デザイン変更) ---
   if (screen === "home") {
     return (
       <div className="container home-screen">
-        <h1>介護福祉士<br />国家試験対策</h1>
-        <p>AIがあなたのために無限に問題を作成します</p>
+        <h1 className="home-title">介護福祉士国家試験対策</h1>
+        <p className="home-subtitle">
+          AIがあなたのために最適化された問題を作成。<br/>
+          効率的に学習を進めましょう。
+        </p>
         
         <div className="menu-buttons">
+          {/* 模擬試験カード */}
           <button 
-            className="menu-btn primary-btn"
+            className="menu-card primary-card"
             onClick={() => generateQuestion(null)}
           >
-             📝 模擬試験（ランダム出題）
+            <div className="card-content">
+              <h2>模擬試験モード</h2>
+              <p>本番形式のランダム出題で実力を試す</p>
+            </div>
+            <div className="card-icon">📝</div>
           </button>
           
+          {/* 科目別カード */}
           <button 
-            className="menu-btn secondary-btn"
+            className="menu-card secondary-card"
             onClick={() => setScreen("categories")}
           >
-            📚 科目別練習モード
+            <div className="card-content">
+              <h2>科目別練習モード</h2>
+              <p>苦手な分野を集中的に克服する</p>
+            </div>
+            <div className="card-icon">📚</div>
           </button>
         </div>
         {error && <p className="error" style={{whiteSpace: 'pre-wrap'}}>{error}</p>}
@@ -171,7 +179,7 @@ function App() {
     );
   }
 
-  // ③ 📚 科目選択画面
+  // --- 📚 科目選択画面 ---
   if (screen === "categories") {
     return (
       <div className="container category-screen">
@@ -198,8 +206,7 @@ function App() {
     );
   }
 
-  // ④ 📝 クイズ画面
-  // 安全装置：もしクイズ画面なのに問題データがない場合は、ホームに戻すかエラーを出さないようにする
+  // --- 📝 クイズ画面 ---
   if (!question) {
      return <div className="container">読み込みエラー。ホームに戻ってください。</div>;
   }

@@ -1,42 +1,256 @@
-#root {
-  max-width: 1280px;
+/* 全体の設定 */
+body {
+  font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+  background-color: #f5f7fa;
+  color: #333;
+  margin: 0;
+  padding: 20px;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 600px;
   margin: 0 auto;
-  padding: 2rem;
+  background-color: transparent; /* 背景色を透明に */
+}
+
+/* --- 🏠 ホーム画面の新しいデザイン --- */
+.home-screen {
+  text-align: left; /* 左寄せ */
+  padding: 30px 10px;
+}
+
+.home-title {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 15px;
+  color: #1a202c;
+}
+
+.home-subtitle {
+  color: #718096;
+  margin-bottom: 40px;
+  line-height: 1.8;
+  font-size: 1rem;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 25px; /* カード間の隙間 */
+}
+
+/* カード型ボタンの共通設定 */
+.menu-card {
+  border: none;
+  border-radius: 24px; /* 丸角 */
+  padding: 30px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  color: white; /* 文字色を白に */
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-card:active {
+  transform: scale(0.98);
+}
+
+.card-content h2 {
+  font-size: 1.5rem;
+  margin: 0 0 10px 0;
+  font-weight: bold;
+}
+
+.card-content p {
+  margin: 0;
+  font-size: 0.95rem;
+  opacity: 0.9; /* 少し透明にして馴染ませる */
+}
+
+.card-icon {
+  font-size: 3.5rem;
+  opacity: 0.8;
+}
+
+/* 🔵 模擬試験カードのグラデーション (青紫系) */
+.primary-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* 🟢 科目別カードのグラデーション (緑青系) */
+.secondary-card {
+  background: linear-gradient(135deg, #2af598 0%, #009efd 100%);
+}
+
+
+/* --- 以下、その他の画面のスタイル（既存のまま調整） --- */
+
+/* エラーメッセージ */
+.error {
+  color: #e53e3e;
+  background: #fff5f5;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+/* 科目選択画面 */
+.category-screen {
+  text-align: center;
+  padding-top: 20px;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+.category-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 30px 0;
 }
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.category-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 15px 20px;
+  border-radius: 12px;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  color: #2d3748;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.category-btn:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+.back-btn {
+  background: transparent;
+  border: none;
+  color: #718096;
+  margin-top: 20px;
+  cursor: pointer;
+  font-size: 1rem;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* クイズ画面 */
+.quiz-screen .card {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.badge {
+  background: #edf2f7;
+  color: #4a5568;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+.close-btn {
+  background: #e2e8f0;
+  color: #4a5568;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
 }
 
-.card {
-  padding: 2em;
+.question-text {
+  font-size: 1.4rem;
+  margin-bottom: 30px;
+  color: #2d3748;
 }
 
-.read-the-docs {
-  color: #888;
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.option-btn {
+  padding: 18px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  color: #2d3748;
+}
+.option-btn:hover:not(:disabled) {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+}
+.option-btn.correct {
+  background-color: #c6f6d5;
+  border-color: #48bb78;
+  color: #065f46;
+}
+.option-btn.incorrect {
+  background-color: #fed7d7;
+  border-color: #f56565;
+  color: #9b2c2c;
+}
+
+.result-area {
+  margin-top: 30px;
+  padding: 25px;
+  border-radius: 12px;
+  background: #f7fafc;
+}
+.result-area.correct { background: #f0fff4; }
+.result-area.incorrect { background: #fff5f5; }
+
+.explanation {
+  margin: 20px 0;
+  white-space: pre-wrap;
+  color: #4a5568;
+}
+
+.next-btn {
+  width: 100%;
+  padding: 18px;
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 20px;
+  box-shadow: 0 4px 6px rgba(66, 153, 225, 0.4);
+}
+.next-btn:hover {
+  background-color: #3182ce;
+}
+
+/* エラーオーバーレイ */
+.error-overlay {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #e53e3e;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 50px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  cursor: pointer;
+  z-index: 100;
 }
