@@ -214,6 +214,10 @@ function App() {
           </button>
         </div>
         {error && <p className="error" style={{whiteSpace: 'pre-wrap'}}>{error}</p>}
+        <footer style={{ marginTop: "50px", borderTop: "1px solid #eee", padding: "20px", color: "#666", fontSize: "0.8rem", textAlign: "center" }}>
+          <p>介護福祉士国家試験対策アプリ Ver 1.0.1</p>
+          <p>Powered by Gemini & Clerk</p>
+        </footer>
       </div>
     );
   }
