@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+// ↓ Clerkの機能をインポート
+import { useUser, SignInButton, UserButton } from "@clerk/clerk-react";
 import "./App.css";
 
 const CATEGORIES = [
@@ -19,6 +21,10 @@ const CATEGORIES = [
 ];
 
 function App() {
+  // ▼▼▼ 追加: Clerkのログイン状態を取得するフック ▼▼▼
+  const { isSignedIn, isLoaded } = useUser();
+
+  // 既存の状態（State）
   const [question, setQuestion] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
   const [result, setResult] = useState(null);
@@ -67,7 +73,6 @@ function App() {
     try {
       const genAI = new GoogleGenerativeAI(API_KEY);
       
-      // ユーザー様の実績に合わせて gemini-2.5-flash を指定
       const model = genAI.getGenerativeModel({ 
         model: "gemini-2.5-flash",
         safetySettings: [
@@ -127,6 +132,35 @@ function App() {
     setResult(null);
   };
 
+  // ▼▼▼ 追加: 認証情報の読み込み中はローディングを表示 ▼▼▼
+  if (!isLoaded) {
+    return <div className="container" style={{textAlign:"center", marginTop:"50px"}}>認証情報を確認中...</div>;
+  }
+
+  // ▼▼▼ 追加: ログインしていない場合、ここ専用の画面を返して終了する ▼▼▼
+  if (!isSignedIn) {
+    return (
+      <div className="container home-screen" style={{ textAlign: "center", justifyContent: "center" }}>
+        <h1 className="home-title">介護福祉士国家試験対策</h1>
+        <p className="home-subtitle">
+          ログインして学習データを保存しましょう。<br/>
+          (現在はGoogleアカウントのみ対応)
+        </p>
+        <div style={{ marginTop: "30px" }}>
+          <SignInButton mode="modal">
+            {/* 既存のボタンスタイルを流用してきれいに見せます */}
+            <button className="menu-card primary-card" style={{ width: "auto", margin: "0 auto", padding: "15px 40px" }}>
+              <div className="card-content">
+                <h2>Googleでログインして開始</h2>
+              </div>
+              <div className="card-icon">🔑</div>
+            </button>
+          </SignInButton>
+        </div>
+      </div>
+    );
+  }
+
   // --- 共通ローディング ---
   if (loading) {
     return (
@@ -143,6 +177,11 @@ function App() {
   if (screen === "home") {
     return (
       <div className="container home-screen">
+        {/* ▼▼▼ 追加: ログイン中のみ右上にユーザーアイコンを表示 ▼▼▼ */}
+        <div style={{ position: "absolute", top: "20px", right: "20px", zIndex: 10 }}>
+          <UserButton />
+        </div>
+
         <h1 className="home-title">介護福祉士国家試験対策</h1>
         <p className="home-subtitle">
           AIがあなたのために最適化された問題を作成。<br/>
